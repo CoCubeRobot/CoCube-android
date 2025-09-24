@@ -6,18 +6,18 @@ node_modules/
 .sourcemaps
 dist/
 
-# ignore webapp output
+# # ignore webapp output
 
-src/emModule.js
-src/icons
-src/boardie
-src/gp*
-src/microblocks.html
-src/microblocksCN.js
-src/sw.js
-src/emModules.js
-src/favicon.ico
-src/FileSaver.js
+# src/emModule.js
+# src/icons
+# src/boardie
+# src/gp*
+# src/microblocks.html
+# src/microblocksCN.js
+# src/sw.js
+# src/emModules.js
+# src/favicon.ico
+# src/FileSaver.js
 
 
 
