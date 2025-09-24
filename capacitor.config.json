@@ -1,0 +1,11 @@
+{
+  "appId": "com.cocuberobot.mb",
+  "appName": "microblocks",
+  "webDir": "dist",
+  "loggingBehavior": "none",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 0
+    }
+  }
+}

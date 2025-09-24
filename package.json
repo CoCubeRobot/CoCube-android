@@ -1,0 +1,31 @@
+{
+  "name": "microblocks-app",
+  "version": "1.0.0",
+  "description": "microblocks binding for tablet",
+  "type": "module",
+  "keywords": [
+    "microblocks",
+    "capacitor",
+    "mobile"
+  ],
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@capacitor-community/bluetooth-le": "^6.0.2",
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/camera": "latest",
+    "@capacitor/core": "latest",
+    "@capacitor/ios": "^6.1.2",
+    "@capacitor/splash-screen": "latest",
+    "@capacitor/status-bar": "^6.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "latest",
+    "vite": "^5.4.2"
+  },
+  "author": "",
+  "license": "ISC"
+}
