@@ -1,6 +1,6 @@
 {
   "appId": "com.cocuberobot.mb",
-  "appName": "microblocks",
+  "appName": "CoCube MicroBlocks",
   "webDir": "dist",
   "loggingBehavior": "none",
   "plugins": {

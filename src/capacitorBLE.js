@@ -1,6 +1,7 @@
 // TODO: implement in microblocks-app repo instead
 // capacitorBLE.js
 import { BleClient } from "@capacitor-community/bluetooth-le";
+import './css/capacitorBLE.css';
 
 const MICROBLOCKS_SERVICE_UUID = 'bb37a001-b922-4018-8e74-e14824b3a638'
 const MICROBLOCKS_RX_CHAR_UUID = 'bb37a002-b922-4018-8e74-e14824b3a638' // board receive characteristic
@@ -20,14 +21,160 @@ class CapacitorBLESerial {
         await this.bleClient.initialize();
     }
 
+
+async scanAndSelectDevice() {
+    // 创建对话框
+    const dialog = this.createDeviceDialog();
+    document.body.appendChild(dialog);
+
+    const foundDevices = {};
+    let updateTimer = null;
+    let promiseResolve = null;
+    let promiseReject = null;
+
+    // 获取当前语言（优先级：浏览器语言 > 系统语言）
+    const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+    const isZh = lang.startsWith('zh');
+    
+    const i18n = {
+        title: isZh ? '选择蓝牙设备' : 'Select Bluetooth Device',
+        scanning: isZh ? '扫描中...' : 'Scanning...',
+        unnamed: isZh ? '未命名设备' : 'Unnamed Device',
+        noDevices: isZh ? '未找到设备' : 'No devices found'
+    };
+
+    // 更新对话框标题
+    dialog.querySelector('h3').textContent = i18n.title;
+
+    // 获取信号强度等级（用于CSS类名）
+    const getSignalLevel = (rssi, allRssi) => {
+        const minRssi = Math.min(...allRssi);
+        const maxRssi = Math.max(...allRssi);
+        const range = maxRssi - minRssi || 1;
+        const normalized = (rssi - minRssi) / range;
+        
+        const signal_level = ['signal-1', 'signal-2', 'signal-3', 'signal-4'];
+        let signal_id = 0;
+
+        if (normalized >= 0.75) signal_id = 3;
+        else if (normalized >= 0.5) signal_id = 2;
+        else if (normalized >= 0.25) signal_id = 1;
+        else signal_id = 0;
+
+        // if devices num less than 4, adjust signal level to avoid all showing same level
+        if (allRssi.length < 4) {
+            signal_id = Math.min(signal_id + (4 - allRssi.length), 3);
+        }
+
+        return signal_level[signal_id];
+    };
+
+    // 更新设备列表的函数
+    const updateDeviceList = () => {
+        const devices = Object.values(foundDevices)
+            .sort((a, b) => b.rssi - a.rssi);
+        
+        const listContainer = dialog.querySelector('.device-list');
+        
+        if (devices.length === 0) {
+            listContainer.innerHTML = `<div class="scanning">${i18n.scanning}</div>`;
+        } else {
+            const allRssi = devices.map(d => d.rssi);
+            listContainer.innerHTML = devices.map((d, i) => {
+                const signalLevel = getSignalLevel(d.rssi, allRssi);
+                return `
+                    <div class="device-item" data-device-id="${d.deviceId}">
+                        <span class="device-name">${d.name || i18n.unnamed}</span>
+                        <span class="device-signal ${signalLevel}">
+                            <span class="signal-bar"></span>
+                            <span class="signal-bar"></span>
+                            <span class="signal-bar"></span>
+                            <span class="signal-bar"></span>
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 绑定点击事件
+        listContainer.querySelectorAll('.device-item').forEach(item => {
+            item.onclick = () => {
+                const deviceId = item.getAttribute('data-device-id');
+                const selectedDevice = foundDevices[deviceId];
+                dialog.remove();
+                clearInterval(updateTimer);
+                this.bleClient.stopLEScan();
+                promiseResolve(selectedDevice);
+            };
+        });
+    };
+
+    return new Promise((resolve, reject) => {
+        promiseResolve = resolve;
+        promiseReject = reject;
+
+        // 开始扫描
+        this.bleClient.requestLEScan(
+            { services: [MICROBLOCKS_SERVICE_UUID], allowDuplicates: false },
+            (result) => {
+                if (result.device && result.rssi !== undefined) {
+                    foundDevices[result.device.deviceId] = {
+                        ...result.device,
+                        rssi: result.rssi
+                    };
+                }
+            }
+        ).catch(reject);
+
+        // 每 500ms 更新一次列表
+        updateTimer = setInterval(updateDeviceList, 500);
+
+        // 取消按钮
+        dialog.querySelector('.cancel-btn').onclick = () => {
+            dialog.remove();
+            clearInterval(updateTimer);
+            this.bleClient.stopLEScan();
+            promiseReject(new Error(isZh ? '用户取消选择' : 'User cancelled'));
+        };
+
+        // 30 秒后自动停止扫描
+        setTimeout(() => {
+            clearInterval(updateTimer);
+            this.bleClient.stopLEScan();
+            if (Object.keys(foundDevices).length === 0) {
+                dialog.remove();
+                promiseReject(new Error(i18n.noDevices));
+            }
+        }, 30000);
+    });
+}
+
+createDeviceDialog() {
+    const dialog = document.createElement('div');
+    dialog.className = 'ble-device-dialog';
+    dialog.innerHTML = `
+        <div class="dialog-overlay">
+            <div class="dialog-content">
+                <div class="dialog-header">
+                    <h3></h3>
+                    <button class="cancel-btn">✕</button>
+                </div>
+                <div class="device-list"></div>
+            </div>
+        </div>
+    `;
+
+    return dialog;
+}
+
+
+
     async connect() {
         try {
             if (!this.bleClient) await this.initialize();
 
             // Request device
-            this.device = await this.bleClient.requestDevice({
-                services: [MICROBLOCKS_SERVICE_UUID],
-            });
+            this.device = await this.scanAndSelectDevice();
 
             // Connect to device
             await this.bleClient.connect(this.device.deviceId , (deviceId) => {
