@@ -334,6 +334,291 @@ function initGPEventHandlers() {
 }
 initGPEventHandlers();
 
+// add floating input
+function initFloatingInput() {
+    if (!isCapacitorEnvironment()) return;
+    
+    let floatingContainer = null;
+    let floatingInput = null;
+    let isFloatingInputActive = false;
+    
+    // 创建浮动输入 UI
+    function createFloatingUI() {
+        if (floatingContainer) return;
+        
+        // 检测系统语言
+        const isChinese = navigator.language.toLowerCase().startsWith('zh');
+        const labels = {
+            placeholder: isChinese ? '请输入...' : 'Enter text...',
+            confirm: isChinese ? '确认' : 'Confirm',
+            cancel: isChinese ? '取消' : 'Cancel'
+        };
+        
+        // 外层遮罩
+        const wrapper = document.createElement('div');
+        wrapper.id = 'floating-input-wrapper';
+        wrapper.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+        `;
+        
+        // 输入框容器
+        const container = document.createElement('div');
+        container.style.cssText = `
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            min-width: 320px;
+            max-width: 90vw;
+            animation: slideUp 0.3s ease-out;
+        `;
+        
+        // 输入框
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = labels.placeholder;
+        input.style.cssText = `
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            outline: none;
+            -webkit-appearance: none;
+        `;
+        
+        // 按钮容器
+        const btnContainer = document.createElement('div');
+        btnContainer.style.cssText = `
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        `;
+        
+        // 取消按钮
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = labels.cancel;
+        cancelBtn.style.cssText = `
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            background: #f5f5f5;
+            color: #666;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            -webkit-tap-highlight-color: transparent;
+        `;
+        
+        // 确认按钮
+        const confirmBtn = document.createElement('button');
+        confirmBtn.textContent = labels.confirm;
+        confirmBtn.style.cssText = `
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            -webkit-tap-highlight-color: transparent;
+        `;
+        
+        // 添加动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideUp {
+                from { opacity: 0; transform: translateY(30px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // 组装 DOM
+        btnContainer.appendChild(cancelBtn);
+        btnContainer.appendChild(confirmBtn);
+        container.appendChild(input);
+        container.appendChild(btnContainer);
+        wrapper.appendChild(container);
+        document.body.appendChild(wrapper);
+        
+        floatingContainer = wrapper;
+        floatingInput = input;
+        
+        // 绑定事件
+        confirmBtn.onclick = () => confirmFloatingInput();
+        cancelBtn.onclick = () => cancelFloatingInput();
+        
+        // 修复退格键问题 - 阻止事件冒泡
+        input.onkeydown = (e) => {
+            // 阻止事件冒泡到 document,避免被全局键盘处理器拦截
+            e.stopPropagation();
+            
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmFloatingInput();
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelFloatingInput();
+            }
+            // 其他按键(包括退格)允许默认行为
+        };
+        
+        // 防止点击遮罩关闭
+        wrapper.onclick = (e) => {
+            if (e.target === wrapper) cancelFloatingInput();
+        };
+        
+        // 防止按钮事件冒泡
+        confirmBtn.onclick = (e) => {
+            e.stopPropagation();
+            confirmFloatingInput();
+        };
+        cancelBtn.onclick = (e) => {
+            e.stopPropagation();
+            cancelFloatingInput();
+        };
+    }
+    
+    // 显示浮动输入框
+    function showFloatingInput() {
+        if (isFloatingInputActive) return;
+        
+        createFloatingUI();
+
+        
+        // 显示容器
+        floatingContainer.style.display = 'flex';
+        floatingInput.value = '';
+        
+        // 标记为激活状态
+        isFloatingInputActive = true;
+        
+        // 延迟聚焦,确保键盘正确弹出
+        setTimeout(() => {
+            floatingInput.focus();
+            floatingInput.select();
+            
+            // iOS 额外触发
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                floatingInput.click();
+            }
+        }, 100);
+        
+        // 阻止原生 clipboard 获得焦点
+        GP.clipboard.blur();
+    }
+    
+    // 确认输入
+    function confirmFloatingInput() {
+        if (!isFloatingInputActive) return;
+        
+        const value = floatingInput.value;
+        
+        // 将值同步到 GP.clipboard
+        GP.clipboard.value = value;
+        
+        // 如果在 Android 上,模拟回车键触发 textinput 事件
+        if (/Android/i.test(navigator.userAgent)) {
+            // 参考原代码第 246-254 行的 Android 回车处理逻辑
+            const TEXTINPUT = 7;
+            for (let i = 0; i < value.length; i++) {
+                GP.events.push([TEXTINPUT, value.charCodeAt(i)]);
+            }
+            if (value.length === 0) {
+                GP.events.push([TEXTINPUT, 13]); // 空字符串插入换行符
+            }
+        } else {
+            // 其他平台,生成 textinput 事件
+            const TEXTINPUT = 7;
+            for (let ch of value) {
+                GP.events.push([TEXTINPUT, ch.codePointAt(0)]);
+            }
+        }
+        
+        hideFloatingInput();
+    }
+    
+    // 取消输入
+    function cancelFloatingInput() {
+        if (!isFloatingInputActive) return;
+        hideFloatingInput();
+    }
+    
+    // 隐藏浮动输入框
+    function hideFloatingInput() {
+        if (!floatingContainer) return;
+        
+        floatingContainer.style.display = 'none';
+        floatingInput.blur();
+        isFloatingInputActive = false;
+        
+        // 将焦点返回给 canvas
+        document.getElementById('canvas').focus();
+    }
+    
+    // 拦截 GP.clipboard 的 focus 事件
+    GP.clipboard.addEventListener('focus', function(e) {
+        if (isCapacitorEnvironment() && !isFloatingInputActive) {
+            // 阻止默认行为
+            e.preventDefault();
+            
+            // 显示浮动输入框
+            showFloatingInput();
+        }
+    });
+    
+    // 监听键盘显示/隐藏(使用 Capacitor Keyboard 插件)
+    if (typeof window.Capacitor !== 'undefined' && window.Capacitor.Plugins.Keyboard) {
+        const { Keyboard } = window.Capacitor.Plugins;
+        
+        let keyboardHeight = 0;
+        
+        Keyboard.addListener('keyboardWillShow', (info) => {
+            keyboardHeight = info.keyboardHeight;
+            adjustFloatingInputPosition();
+        });
+        
+        Keyboard.addListener('keyboardWillHide', () => {
+            keyboardHeight = 0;
+            adjustFloatingInputPosition();
+        });
+        
+        function adjustFloatingInputPosition() {
+            if (!floatingContainer || !isFloatingInputActive) return;
+            
+            const container = floatingContainer.querySelector('div');
+            if (keyboardHeight > 0) {
+                // 向上移动,避免被键盘遮挡
+                container.style.transform = `translateY(-${keyboardHeight / 2}px)`;
+                container.style.transition = 'transform 0.3s ease-out';
+            } else {
+                container.style.transform = 'translateY(0)';
+            }
+        }
+        
+        // 配置键盘行为
+        Keyboard.setAccessoryBarVisible({ isVisible: true });
+        Keyboard.setScroll({ isDisabled: true });
+    }
+}
+initFloatingInput();
+
+
 function GP_backspace() {
 	// Simulate the backspace/delete key on Android.
 	var KEY_DOWN = 5;
