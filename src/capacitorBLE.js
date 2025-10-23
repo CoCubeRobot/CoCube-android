@@ -115,13 +115,29 @@ async scanAndSelectDevice() {
 
         // 开始扫描
         this.bleClient.requestLEScan(
-            { services: [MICROBLOCKS_SERVICE_UUID], allowDuplicates: false },
+            { services: [MICROBLOCKS_SERVICE_UUID], allowDuplicates: true }, // 改为 true 允许重复扫描
             (result) => {
                 if (result.device && result.rssi !== undefined) {
-                    foundDevices[result.device.deviceId] = {
-                        ...result.device,
-                        rssi: result.rssi
-                    };
+                    const deviceId = result.device.deviceId;
+                    const deviceName = result.device.name;
+                    
+                    // 如果设备已存在且之前没有名称，现在有名称了，则更新
+                    if (foundDevices[deviceId]) {
+                        // 更新 RSSI（取较强的信号）
+                        if (result.rssi > foundDevices[deviceId].rssi) {
+                            foundDevices[deviceId].rssi = result.rssi;
+                        }
+                        // 如果之前没有名称但现在有了，更新名称
+                        if (!foundDevices[deviceId].name && deviceName) {
+                            foundDevices[deviceId].name = deviceName;
+                        }
+                    } else {
+                        // 新设备
+                        foundDevices[deviceId] = {
+                            ...result.device,
+                            rssi: result.rssi
+                        };
+                    }
                 }
             }
         ).catch(reject);
