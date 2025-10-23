@@ -368,8 +368,6 @@ function initFloatingInput() {
             display: none;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(2px);
-            -webkit-backdrop-filter: blur(2px);
         `;
         
         // 输入框容器
@@ -524,35 +522,51 @@ function initFloatingInput() {
     }
     
     // 确认输入
-    function confirmFloatingInput() {
-        if (!isFloatingInputActive) return;
-        
-        const value = floatingInput.value;
-        
-        // 将值同步到 GP.clipboard
-        GP.clipboard.value = value;
-        
-        // 如果在 Android 上,模拟回车键触发 textinput 事件
-        if (/Android/i.test(navigator.userAgent)) {
-            // 参考原代码第 246-254 行的 Android 回车处理逻辑
-            const TEXTINPUT = 7;
-            for (let i = 0; i < value.length; i++) {
-                GP.events.push([TEXTINPUT, value.charCodeAt(i)]);
-            }
-            if (value.length === 0) {
-                GP.events.push([TEXTINPUT, 13]); // 空字符串插入换行符
-            }
-        } else {
-            // 其他平台,生成 textinput 事件
-            const TEXTINPUT = 7;
-            for (let ch of value) {
-                GP.events.push([TEXTINPUT, ch.codePointAt(0)]);
-            }
-        }
-        
-        hideFloatingInput();
-    }
-    
+	function confirmFloatingInput() {
+		if (!isFloatingInputActive) return;
+		
+		const value = floatingInput.value;
+		
+		// 🔑 关键修改:完全覆盖,而非追加
+		// 1. 先清空原有内容(发送退格键删除所有字符)
+
+		const KEY_DOWN = 5;
+		const KEY_UP = 6;
+		
+		// 方案1: 发送 Ctrl+A 全选 + Delete
+		// 模拟 Ctrl+A (全选)
+		GP.events.push([KEY_DOWN, 17, 0, 2]); // Ctrl down (keyCode=17, modifiers=2)
+		GP.events.push([KEY_DOWN, 65, 97, 2]); // A down (keyCode=65, charCode=97)
+		GP.events.push([KEY_UP, 65, 97, 2]);   // A up
+		GP.events.push([KEY_UP, 17, 0, 2]);    // Ctrl up
+		
+		// 模拟 Delete/Backspace
+		GP.events.push([KEY_DOWN, 8, 8, 0]);   // Backspace down
+		GP.events.push([KEY_UP, 8, 8, 0]);     // Backspace up
+		
+		
+		// 2. 写入新内容
+		GP.clipboard.value = value;
+		
+		// 3. 生成新内容的 textinput 事件
+		const TEXTINPUT = 7;
+		if (/Android/i.test(navigator.userAgent)) {
+			// Android 特殊处理
+			for (let i = 0; i < value.length; i++) {
+				GP.events.push([TEXTINPUT, value.charCodeAt(i)]);
+			}
+			if (value.length === 0) {
+				GP.events.push([TEXTINPUT, 13]); // 空字符串插入换行符
+			}
+		} else {
+			// 其他平台
+			for (let ch of value) {
+				GP.events.push([TEXTINPUT, ch.codePointAt(0)]);
+			}
+		}
+		
+		hideFloatingInput();
+	}
     // 取消输入
     function cancelFloatingInput() {
         if (!isFloatingInputActive) return;
