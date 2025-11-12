@@ -10,7 +10,10 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        main: './src/index.html'
+        main: './src/index.html',
+        features: './src/features.html',
+        soccer: './src/features/soccer.html',
+        racing: './src/features/racing.html'
       }
     }
   },

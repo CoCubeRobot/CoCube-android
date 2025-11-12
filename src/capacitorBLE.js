@@ -8,6 +8,9 @@ const MICROBLOCKS_RX_CHAR_UUID = 'bb37a002-b922-4018-8e74-e14824b3a638' // board
 const MICROBLOCKS_TX_CHAR_UUID = 'bb37a003-b922-4018-8e74-e14824b3a638' // board transmit characteristic
 
 class CapacitorBLESerial {
+    // class variables
+    GP_serialInputBuffers = [];
+
     constructor() {
         this.device = null;
         this.connected = false;
@@ -206,7 +209,8 @@ createDeviceDialog() {
                 MICROBLOCKS_TX_CHAR_UUID,
                 (data) => {
                     const value = new Uint8Array(data.buffer);
-                    GP_serialInputBuffers.push(value);
+                    this.GP_serialInputBuffers.push(value);
+                    // GP_serialInputBuffers.push(value);
                 }
             );
 
@@ -242,6 +246,7 @@ createDeviceDialog() {
     }
 
     write_data(data) {
+        let BLE_PACKET_LEN = 240;
         if (!this.device || !this.connected) return 0;
         if (this.sendInProgress) return 0;
 

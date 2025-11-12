@@ -120,7 +120,7 @@
   <body>
     <script>
       // Force HTTPS. Otherwise WebSerial can't be accessed.
-      if (location.protocol === 'http:') { location.protocol = 'https:'; }
+      // if (location.protocol === 'http:') { location.protocol = 'https:'; }
     </script>
 
     <span id='controls' style="display: none">
@@ -147,6 +147,15 @@
       <canvas class="emscripten" id="canvas" width="100px" height="100px"></canvas>
     </div>
 
+    <!-- 添加这个悬浮按钮 -->
+  <button id="moreFeaturesBtn" class="more-features-btn" aria-label="更多功能" data-href="features.html">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+      <circle cx="12" cy="5" r="2"/>
+      <circle cx="12" cy="12" r="2"/>
+      <circle cx="12" cy="19" r="2"/>
+    </svg>
+  </button>
+
     <capacitor-welcome></capacitor-welcome>
 
     <script type="module" src="capacitorBLE.js"></script>
@@ -156,5 +165,6 @@
     <script type="text/javascript" src="FileSaver.js"></script>
     <script type="text/javascript" src="gp_wasm.js?version=2-0-0-5"></script>
     <script type="module" src="./appload.js"></script>
+    <script type="module" src="./moreFeaturesBtn.js"></script>
   </body>
 </html>
