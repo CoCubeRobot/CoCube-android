@@ -196,31 +196,31 @@ const getAllCRCs = (serialPort) =>
   sendShortMsg(serialPort, OPCODES.GET_ALL_CRCS, 0);
 
 // -------------------- 消息监听 --------------------
-function listenSerial(serialPort, callback) {
-  const { GP_serialInputBuffers } = serialPort;
+// function listenSerial(serialPort, callback) {
+//   const { GP_serialInputBuffers } = serialPort;
   
-  for (const buffer of GP_serialInputBuffers) {
-    try {
-      // 短消息
-      if (buffer[0] === FLAG_SHORT && buffer.length >= 3) {
-        callback(parseMsg(buffer.slice(0, 3)));
-        continue;
-      }
+//   for (const buffer of GP_serialInputBuffers) {
+//     try {
+//       // 短消息
+//       if (buffer[0] === FLAG_SHORT && buffer.length >= 3) {
+//         callback(parseMsg(buffer.slice(0, 3)));
+//         continue;
+//       }
       
-      // 长消息
-      if (buffer[0] === FLAG_LONG && buffer.length >= 5) {
-        const size = fromLE(buffer.slice(3, 5));
-        if (buffer.length >= 5 + size) {
-          callback(parseMsg(buffer.slice(0, 5 + size)));
-        }
-      }
-    } catch (error) {
-      console.error('Parse message error:', error);
-    }
-  }
+//       // 长消息
+//       if (buffer[0] === FLAG_LONG && buffer.length >= 5) {
+//         const size = fromLE(buffer.slice(3, 5));
+//         if (buffer.length >= 5 + size) {
+//           callback(parseMsg(buffer.slice(0, 5 + size)));
+//         }
+//       }
+//     } catch (error) {
+//       console.error('Parse message error:', error);
+//     }
+//   }
   
-  GP_serialInputBuffers.length = 0;
-}
+//   GP_serialInputBuffers.length = 0;
+// }
 
 // -------------------- 文件传输 --------------------
 async function sendFileChunk(serialPort, transferID, offset, data) {
@@ -241,23 +241,23 @@ async function readByteListsFromFile() {
     .filter(list => list.length > 0);
 }
 
-// -------------------- 批量发送 --------------------
-async function waitForAcknowledgment(bleSerial) {
-  return new Promise((resolve) => {
-    const timeout = setTimeout(() => {
-      console.warn('Timeout waiting for acknowledgment');
-      resolve(false);
-    }, ACK_TIMEOUT_MS);
+// // -------------------- 批量发送 --------------------
+// async function waitForAcknowledgment(bleSerial) {
+//   return new Promise((resolve) => {
+//     const timeout = setTimeout(() => {
+//       console.warn('Timeout waiting for acknowledgment');
+//       resolve(false);
+//     }, ACK_TIMEOUT_MS);
 
-    listenSerial(bleSerial, (data) => {
-      if (data.opcode === OPCODES.ACK_CHUNK_RECEIVED || 
-          data.opcode === OPCODES.ACK_ALTERNATE) {
-        clearTimeout(timeout);
-        resolve(true);
-      }
-    });
-  });
-}
+//     listenSerial(bleSerial, (data) => {
+//       if (data.opcode === OPCODES.ACK_CHUNK_RECEIVED || 
+//           data.opcode === OPCODES.ACK_ALTERNATE) {
+//         clearTimeout(timeout);
+//         resolve(true);
+//       }
+//     });
+//   });
+// }
 
 async function sendByteList(bleSerial, byteLists, progressCallback) {
   await deleteAllCode(bleSerial);
@@ -274,7 +274,10 @@ async function sendByteList(bleSerial, byteLists, progressCallback) {
         await sendChunkCode(bleSerial, i, byteList);
         console.log(`Sent chunk ${i}/${total}`);
 
-        success = await waitForAcknowledgment(bleSerial);
+        // success = await waitForAcknowledgment(bleSerial);
+        // delay 50ms instead of waiting for ack
+        await delay(ACK_TIMEOUT_MS);
+        success = true;
 
         if (!success) {
           console.warn(`Retrying chunk ${i}`);

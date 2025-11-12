@@ -209,8 +209,7 @@ createDeviceDialog() {
                 MICROBLOCKS_TX_CHAR_UUID,
                 (data) => {
                     const value = new Uint8Array(data.buffer);
-                    this.GP_serialInputBuffers.push(value);
-                    // GP_serialInputBuffers.push(value);
+                    GP_serialInputBuffers.push(value);
                 }
             );
 
