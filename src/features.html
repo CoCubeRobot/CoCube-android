@@ -12,7 +12,41 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <link rel="icon" href="favicon.ico" type="image/x-icon" />
-    
+    <script>
+        // 语言检测
+        const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+        const isZh = lang.startsWith('zh');
+
+        // 翻译文本
+        const i18n = {
+            zh: {
+                title: '更多功能',
+                soccerTitle: '足球对抗',
+                soccerDesc: '使用手机或Pad控制机器人进行足球比赛',
+                racingTitle: '模拟赛道',
+                racingDesc: '使用手机或Pad控制机器人在赛道上进行比赛'
+            },
+            en: {
+                title: 'More Features',
+                soccerTitle: 'Soccer Battle',
+                soccerDesc: 'Control the robot for soccer matches using phone or tablet',
+                racingTitle: 'Racing Track',
+                racingDesc: 'Control the robot on racing tracks using phone or tablet'
+            }
+        };
+
+        const t = isZh ? i18n.zh : i18n.en;
+
+        // 页面加载后设置文本
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('pageTitle').textContent = t.title;
+            document.getElementById('soccerTitle').textContent = t.soccerTitle;
+            document.getElementById('soccerDesc').textContent = t.soccerDesc;
+            // document.getElementById('racingTitle').textContent = t.racingTitle;
+            // document.getElementById('racingDesc').textContent = t.racingDesc;
+        });
+    </script>
+
     <style>
       * {
         margin: 0;
@@ -227,15 +261,15 @@
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
         </svg>
       </button>
-      <h1>更多功能</h1>
+      <h1 id="pageTitle"></h1>
     </div>
 
     <div class="features-container">
       <div class="feature-card" onclick="window.location.href='features/soccer.html'">
         <div class="feature-icon soccer">⚽</div>
         <div class="feature-content">
-          <div class="feature-title">足球对抗</div>
-          <div class="feature-description">使用手机或Pad控制机器人进行足球比赛</div>
+          <div class="feature-title" id="soccerTitle"></div>
+          <div class="feature-description" id="soccerDesc"></div>
         </div>
         <svg class="feature-arrow" viewBox="0 0 24 24">
           <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" fill="currentColor"/>
@@ -245,8 +279,8 @@
       <!-- <div class="feature-card" onclick="window.location.href='features/racing.html'">
         <div class="feature-icon racing">🏁</div>
         <div class="feature-content">
-          <div class="feature-title">模拟赛道</div>
-          <div class="feature-description">使用手机或Pad控制机器人在赛道上进行比赛</div>
+          <div class="feature-title" id="racingTitle"></div>
+          <div class="feature-description" id="racingDesc"></div>
         </div>
         <svg class="feature-arrow" viewBox="0 0 24 24">
           <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z" fill="currentColor"/>

@@ -13,6 +13,35 @@
     <link rel="icon" href="favicon.ico" type="image/x-icon" />
 
     <script type="module" src="../capacitorBLE.js"></script>
+    <script>
+        // 语言检测
+        const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+        const isZh = lang.startsWith('zh');
+
+        // 翻译文本
+        const i18n = {
+            zh: {
+                title: '⚽ 足球对抗',
+                notConnected: '未连接',
+                connected: '已连接',
+                connect: '连接',
+                disconnect: '断开',
+                downloading: '正在下载程序...',
+                downloadFailed: '下载失败: '
+            },
+            en: {
+                title: '⚽ Soccer Battle',
+                notConnected: 'Disconnected',
+                connected: 'Connected',
+                connect: 'Connect',
+                disconnect: 'Disconnect',
+                downloading: 'Downloading program...',
+                downloadFailed: 'Download failed: '
+            }
+        };
+
+        const t = isZh ? i18n.zh : i18n.en;
+    </script>
     <style>
         * {
             margin: 0;
@@ -333,11 +362,11 @@
                 <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
             </svg>
         </button>
-        <div class="title">⚽ 足球对抗</div>
+        <div class="title" id="pageTitle"></div>
         <div class="connect-status">
             <div class="status-dot" id="statusDot"></div>
-            <span class="status-text" id="statusText">未连接</span>
-            <button class="connect-btn" id="connectBtn">连接</button>
+            <span class="status-text" id="statusText"></span>
+            <button class="connect-btn" id="connectBtn"></button>
         </div>
     </div>
 
@@ -377,16 +406,13 @@
     <!-- 添加进度条 HTML -->
     <script type="module">
         import { sendByteList } from './serialProtocol.js';
-        import { chunks_data } from './chunks/soccer_chunks.js';  // 导入数据
+        import { chunks_data } from './chunks/soccer_chunks.js';
 
         // 检测环境并使用对应的 BLE 实现
         let bleSerial;
         if (typeof window.Capacitor !== 'undefined') {
-            // Capacitor 环境 - 使用 CapacitorBLESerial
             bleSerial = new window.CapacitorBLESerial();
         }
-
-        // const bleSerial = new BLESerial();
 
         // UI 元素
         const backBtn = document.getElementById('backBtn');
@@ -395,6 +421,12 @@
         const statusText = document.getElementById('statusText');
         const joystick = document.getElementById('joystick');
         const joystickHandle = document.getElementById('joystickHandle');
+        const pageTitle = document.getElementById('pageTitle');
+
+        // 初始化文本
+        pageTitle.textContent = t.title;
+        statusText.textContent = t.notConnected;
+        connectBtn.textContent = t.connect;
 
         // 返回按钮
         backBtn.addEventListener('click', () => {
@@ -434,9 +466,8 @@
                 if (bleSerial.isConnected()) {
                     try {
                         showProgress();
-                        progressText.textContent = '正在下载程序...';
+                        progressText.textContent = t.downloading;
 
-                        // 支持进度回调
                         await sendByteList(bleSerial, chunks_data, (current, total) => {
                             const percent = (current / total) * 100;
                             updateProgress(percent);
@@ -445,11 +476,10 @@
                         hideProgress();
                     } catch (error) {
                         console.error('Error sending binary data:', error);
-                        progressText.textContent = '下载失败: ' + error.message;
+                        progressText.textContent = t.downloadFailed + error.message;
                         setTimeout(hideProgress, 2000);
                     }
                 }
-
             }
         });
 
@@ -457,12 +487,12 @@
         function updateConnectStatus() {
             if (bleSerial.isConnected()) {
                 statusDot.classList.add('connected');
-                statusText.textContent = '已连接';
-                connectBtn.textContent = '断开';
+                statusText.textContent = t.connected;
+                connectBtn.textContent = t.disconnect;
             } else {
                 statusDot.classList.remove('connected');
-                statusText.textContent = '未连接';
-                connectBtn.textContent = '连接';
+                statusText.textContent = t.notConnected;
+                connectBtn.textContent = t.connect;
             }
         }
 
