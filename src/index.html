@@ -115,6 +115,47 @@
 	<script>
 		// Force HTTPS. Otherwise WebSerial can't be accessed.
 		// if (location.protocol === 'http:') { location.protocol = 'https:'; }
+
+		// Auto-detect language from browser and set preferences
+		(function() {
+			// Check if language preference already exists
+			var prefs = {};
+			try {
+				var existingPrefs = localStorage.getItem('user-prefs');
+				if (existingPrefs) {
+					prefs = JSON.parse(existingPrefs);
+					if (prefs.locale) return; // Already set
+				}
+			} catch (e) {}
+
+			// Language mapping based on AuthoringSpecs.gp
+			var langMap = {
+				'es': 'es', 'ca': 'ca', 'de': 'de', 'en': 'en',
+				'eu': 'eu', 'fr': 'fr', 'gl': 'gl', 'it': 'it',
+				'nl': 'nl', 'pl': 'pl', 'pt': 'pt', 'ro': 'ro',
+				'tr': 'tr', 'uz': 'uz', 'cs': 'cs', 'el': 'el',
+				'ru': 'ru', 'sr': 'sr', 'uk': 'uk', 'ar': 'ar',
+				'fa': 'fa', 'ta': 'ta', 'ja': 'ja', 'ko': 'ko'
+			};
+
+			// Get browser language base code
+			var browserLang = (navigator.language || 'en').split('-')[0];
+			var detectedLang = langMap[browserLang] || 'en';
+
+			// Handle Chinese and Portuguese variants
+			if (browserLang === 'zh') {
+				var fullLang = navigator.language.toLowerCase();
+				detectedLang = (fullLang.includes('tw') || fullLang.includes('hk') || fullLang.includes('hant')) 
+					? 'zh-cht' : 'zh-chs';
+			} else if (browserLang === 'pt') {
+				detectedLang = navigator.language.toLowerCase().includes('br') ? 'pt-br' : 'pt';
+			}
+
+			// Save preference
+			prefs.locale = detectedLang;
+			localStorage.setItem('user-prefs', JSON.stringify(prefs));
+			console.log('MicroBlocks: Language set to:', detectedLang);
+		})();
 	</script>
 	<span id='controls' style="display: none">
 		<input type="button" value="Keyboard" id="KeyboardButton">
